@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Охотник за сундуками</title>
+<script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); color: #fff; min-height: 100vh; overflow-x: hidden; padding-bottom: 80px; }
+header { background: rgba(0,0,0,0.6); padding: 12px; text-align: center; border-bottom: 2px solid #e94560; position: sticky; top: 0; z-index: 100; }
+h1 { color: #e94560; text-shadow: 0 0 10px #e94560; font-size: 20px; }
+.money { font-size: 22px; color: #ffd700; margin-top: 6px; text-shadow: 0 0 10px #ffd700; font-weight: bold; }
+.info-row { font-size: 12px; color: #aaa; margin-top: 4px; }
+.music-btn { position: absolute; top: 12px; right: 12px; background: rgba(233, 69, 96, 0.3); border: 2px solid #e94560; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 18px; }
+.tabs { display: flex; justify-content: center; gap: 6px; padding: 10px; flex-wrap: wrap; }
+.tab { padding: 8px 14px; background: #0f3460; border: 2px solid #e94560; color: #fff; cursor: pointer; border-radius: 10px; font-size: 13px; font-weight: bold; }
+.tab.active { background: #e94560; }
+.section { display: none; padding: 15px; }
+.section.active { display: block; }
+.tapper-area { text-align: center; padding: 15px; }
+.coin { width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ffd700, #b8860b); margin: 20px auto; cursor: pointer; box-shadow: 0 0 50px #ffd700, inset 0 0 30px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 100px; transition: transform 0.1s; border: 8px solid #8b6914; position: relative; }
+.coin:active { transform: scale(0.92); }
+.coin-info { font-size: 15px; margin: 8px; }
+.ad-btn { background: linear-gradient(135deg, #4caf50, #2e7d32); color: #fff; border: none; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+.upgrades { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 20px; max-width: 900px; margin-left: auto; margin-right: auto; }
+.upgrade { background: rgba(15, 52, 96, 0.8); padding: 14px; border-radius: 12px; border: 2px solid #e94560; }
+.upgrade h3 { font-size: 15px; margin-bottom: 6px; }
+.upgrade p { font-size: 13px; margin: 3px 0; color: #ccc; }
+.upgrade button { width: 100%; padding: 10px; background: #e94560; border: none; color: #fff; cursor: pointer; border-radius: 8px; margin-top: 8px; font-size: 13px; font-weight: bold; }
+.chests-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; max-width: 1200px; margin: 0 auto; }
+.chest { background: rgba(0,0,0,0.4); border: 3px solid #8b6914; border-radius: 14px; padding: 12px; text-align: center; cursor: pointer; transition: 0.3s; }
+.chest:active { transform: translateY(-4px); }
+.chest-icon { font-size: 48px; margin: 8px 0; }
+.chest-name { font-weight: bold; font-size: 13px; margin-bottom: 4px; }
+.chest-price { color: #ffd700; font-size: 14px; font-weight: bold; }
+.chest-tier-1 { border-color: #8b8b8b; }
+.chest-tier-2 { border-color: #cd7f32; }
+.chest-tier-3 { border-color: #c0c0c0; }
+.chest-tier-4 { border-color: #ffd700; }
+.chest-tier-5 { border-color: #b9f2ff; }
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; padding: 20px; }
+.modal.active { display: flex; }
+.modal-content { background: linear-gradient(135deg, #16213e, #0f3460); padding: 25px; border-radius: 20px; border: 3px solid #e94560; text-align: center; max-width: 400px; width: 100%; }
+.item-reveal { font-size: 90px; margin: 15px 0; }
+.share-btn { background: #4680c2; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 5px; font-size: 14px; font-weight: bold; }
+.close-btn { padding: 10px 25px; background: #e94560; border: none; color: #fff; cursor: pointer; border-radius: 8px; font-size: 15px; margin: 5px; font-weight: bold; }
+.inventory-filters { display: flex; gap: 6px; margin-bottom: 15px; flex-wrap: wrap; justify-content: center; }
+.filter-btn { padding: 6px 12px; background: #0f3460; border: 1px solid #e94560; color: #fff; cursor: pointer; border-radius: 6px; font-size: 12px; }
+.filter-btn.active { background: #e94560; }
+.inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; max-width: 1200px; margin: 0 auto; }
+.inv-item { background: rgba(0,0,0,0.4); padding: 8px; border-radius: 10px; text-align: center; border: 2px solid #333; font-size: 11px; position: relative; }
+.inv-item .icon { font-size: 28px; }
+.inv-item .count { position: absolute; top: -5px; right: -5px; background: #e94560; color: #fff; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold; }
+.sell-btn { margin-top: 6px; padding: 4px 8px; background: #e94560; border: none; color: #fff; border-radius: 5px; cursor: pointer; font-size: 10px; width: 100%; }
+.stats { text-align: center; padding: 15px; font-size: 15px; }
+.stats p { margin: 8px 0; }
+.floating-coin { position: absolute; color: #ffd700; font-weight: bold; font-size: 22px; pointer-events: none; animation: floatUp 1s forwards; text-shadow: 0 0 5px #000; }
+@keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-80px); } }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(233, 69, 96, 0.9); padding: 10px 20px; border-radius: 10px; z-index: 300; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>🏴‍☠️ ОХОТНИК ЗА СУНДУКАМИ</h1>
+    <button class="music-btn" id="musicBtn">🔊</button>
+    <div class="money">💰 <span id="money">0</span></div>
+    <div class="info-row">📦 База: <span id="totalItems">0</span> | 🎒 Ваших: <span id="invCount">0</span></div>
+</header>
+
+<div class="tabs">
+    <button class="tab active" data-section="tapper">⛏️ Тапалка</button>
+    <button class="tab" data-section="chests">📦 Сундуки</button>
+    <button class="tab" data-section="inventory">🎒 Инвентарь</button>
+    <button class="tab" data-section="stats">📊 Стата</button>
+</div>
+
+<div id="tapper" class="section active">
+    <div class="tapper-area">
+        <h2 style="font-size:18px;">Зарабатывай монеты!</h2>
+        <div class="coin-info">👆 <span id="perClick">1</span> | 🤖 <span id="perSec">0</span>/сек</div>
+        <div style="position:relative; display:inline-block;">
+            <div class="coin" id="coin">💰</div>
+        </div>
+        <div>
+            <button class="ad-btn" id="adBtn">📺 Реклама за 1000 💰</button>
+        </div>
+        <div class="upgrades">
+            <div class="upgrade">
+                <h3>👆 Сила клика</h3>
+                <p>Уровень: <span id="clickLvl">1</span></p>
+                <p>+1 к клику</p>
+                <button id="btnClick">💰 <span id="clickCost">10</span></button>
+            </div>
+            <div class="upgrade">
+                <h3>🤖 Автокликер</h3>
+                <p>Уровень: <span id="autoLvl">0</span></p>
+                <p>+1 монета/сек</p>
+                <button id="btnAuto">💰 <span id="autoCost">50</span></button>
+            </div>
+            <div class="upgrade">
+                <h3>💎 Множитель x2</h3>
+                <p>Уровень: <span id="multLvl">1</span></p>
+                <p>Умножает доход</p>
+                <button id="btnMult">💰 <span id="multCost">1000</span></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="chests" class="section">
+    <h2 style="text-align:center; margin-bottom:15px; font-size:18px;">📦 Выберите сундук</h2>
+    <div class="chests-grid" id="chestsGrid"></div>
+</div>
+
+<div id="inventory" class="section">
+    <h2 style="text-align:center; margin-bottom:15px; font-size:18px;">🎒 Ваши предметы</h2>
+    <div class="inventory-filters" id="invFilters"></div>
+    <div class="inventory-grid" id="inventoryGrid"></div>
+</div>
+
+<div id="stats" class="section">
+    <h2 style="text-align:center; font-size:18px;">📊 Статистика</h2>
+    <div class="stats">
+        <p>💰 Заработано: <span id="totalEarned">0</span></p>
+        <p>👆 Кликов: <span id="totalClicks">0</span></p>
+        <p>📦 Сундуков: <span id="chestsOpened">0</span></p>
+        <p>🎁 Предметов: <span id="itemsGotten">0</span></p>
+        <p>🌟 Легендарных: <span id="legCount">0</span></p>
+        <p>👑 Мифических: <span id="mythCount">0</span></p>
+        <button class="share-btn" id="shareStatsBtn" style="margin-top:15px;">📢 Поделиться в ВК</button>
+        <button class="share-btn" id="inviteBtn" style="background:#5a5ae6;">👥 Позвать друзей</button>
+    </div>
+</div>
+
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <h2>🎉 Вы получили!</h2>
+        <div class="item-reveal" id="revealIcon">🎁</div>
+        <h3 id="revealName">Предмет</h3>
+        <p id="revealRarity" style="margin:10px 0; font-size:16px; font-weight:bold;">Редкость</p>
+        <p id="revealValue" style="color:#ffd700;">💰 0</p>
+        <div style="margin-top:15px;">
+            <button class="share-btn" id="shareItemBtn">📢 Хвастаться</button>
+            <button class="close-btn" id="closeModalBtn">Забрать</button>
+        </div>
+    </div>
+</div>
+
+<script>
+'use strict';
+
+// ============ VK BRIDGE ============
+var vkReady = false;
+try {
+    if (typeof vkBridge !== 'undefined') {
+        vkBridge.send('VKWebAppInit').then(function(){ vkReady = true; }).catch(function(){});
+    }
+} catch(e) {}
+
+// ============ АУДИО ============
+var audioCtx = null;
+var musicOn = true;
+var musicTimeout = null;
+var currentNote = 0;
+
+var melody = [
+    {n:523,d:200},{n:659,d:200},{n:784,d:200},{n:1047,d:400},
+    {n:784,d:200},{n:1047,d:600},
+    {n:494,d:200},{n:587,d:200},{n:740,d:200},{n:988,d:400},
+    {n:740,d:200},{n:988,d:600},
+    {n:523,d:200},{n:659,d:200},{n:784,d:200},{n:1047,d:400},
+    {n:1175,d:300},{n:1047,d:300},{n:784,d:600},
+    {n:698,d:200},{n:784,d:200},{n:880,d:200},{n:1047,d:400},
+    {n:880,d:400},{n:784,d:800}
+];
+
+function initAudio() {
+    if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        catch(e) { console.log('no audio'); }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playNote(freq, duration, type) {
+    if (!audioCtx || !musicOn) return;
+    try {
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = type || 'square';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration/1000);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration/1000);
+    } catch(e){}
+}
+
+function playMelody() {
+    if (!musicOn || !audioCtx) return;
+    var note = melody[currentNote];
+    playNote(note.n, note.d);
+    playNote(note.n/4, note.d, 'triangle');
+    currentNote = (currentNote + 1) % melody.length;
+    musicTimeout = setTimeout(playMelody, note.d + 50);
+}
+
+function playSound(type) {
+    if (!audioCtx || !musicOn) return;
+    if (type === 'click') playNote(800, 80);
+    else if (type === 'chest') [523,659,784,1047].forEach(function(f,i){ setTimeout(function(){playNote(f,150);}, i*80); });
+    else if (type === 'rare') [523,659,784,1047,1319].forEach(function(f,i){ setTimeout(function(){playNote(f,200);}, i*100); });
+    else if (type === 'buy') playNote(600, 150, 'sine');
+}
+
+function toggleMusic() {
+    musicOn = !musicOn;
+    document.getElementById('musicBtn').textContent = musicOn ? '🔊' : '🔇';
+    if (musicOn) {
+        initAudio();
+        clearTimeout(musicTimeout);
+        playMelody();
+    } else {
+        clearTimeout(musicTimeout);
+    }
+    state.musicOn = musicOn;
+    save();
+}
+
+// ============ РЕДКОСТИ ============
+var rarities = {
+    common:    { name:'Обычный',     color:'#aaa',    chance:50,  mult:0.5 },
+    uncommon:  { name:'Необычный',   color:'#4caf50', chance:25,  mult:1.0 },
+    rare:      { name:'Редкий',      color:'#2196f3', chance:15,  mult:2.0 },
+    epic:      { name:'Эпический',   color:'#9c27b0', chance:7,   mult:4.0 },
+    legendary: { name:'Легендарный', color:'#ff9800', chance:2.5, mult:8.0 },
+    mythic:    { name:'Мифический',  color:'#e91e63', chance:0.5, mult:20.0 }
+};
+
+// ============ КАТЕГОРИИ ============
+var itemCategories = [
+    { cat:'weapons',  name:'⚔️ Оружие',    icons:['⚔️','🗡️','🔪','🏹','🪃','🔱','⛏️','🪓','🔨','🧨','💣','🎯','🪚','🔫','🗯️'], names:['Меч','Клинок','Кинжал','Лук','Бумеранг','Трезубец','Кирка','Топор','Молот','Бомба','Мина','Дротик','Пила','Револьвер','Взрыв'] },
+    { cat:'armor',    name:'🛡️ Броня',     icons:['🛡️','🪖','👑','👒','🎩','🧢','⛑️','👓','🕶️','💍','📿','👔','🥋','🧥','👘'], names:['Щит','Шлем','Корона','Шляпа','Цилиндр','Кепка','Каска','Очки','Линзы','Кольцо','Амулет','Галстук','Кимоно','Плащ','Роба'] },
+    { cat:'gems',     name:'💎 Самоцветы', icons:['💎','💠','🔶','🔷','🟢','🔴','🟣','🟡','⚪','⚫','🟠','🟤','🔵','🟪','🟥'], names:['Алмаз','Бриллиант','Топаз','Сапфир','Изумруд','Рубин','Аметист','Янтарь','Жемчуг','Оникс','Гранат','Агат','Лазурит','Турмалин','Опал'] },
+    { cat:'magic',    name:'🔮 Магия',     icons:['🔮','📿','🧿','✨','🌟','⭐','💫','🪄','📜','🧪','⚗️','🕯️','🪬','☄️','🌠'], names:['Шар','Амулет','Оберег','Искры','Звезда','Свет','Комета','Палочка','Свиток','Зелье','Колба','Свеча','Хамса','Метеор','Падающая звезда'] },
+    { cat:'food',     name:'🍕 Еда',       icons:['🍎','🍌','🍕','🍔','🍗','🥩','🍰','🍪','🍭','🍫','🍩','🍦','🧁','🥞','🌮'], names:['Яблоко','Банан','Пицца','Бургер','Курица','Стейк','Торт','Печенье','Леденец','Шоколад','Пончик','Мороженое','Кекс','Блины','Тако'] },
+    { cat:'animals',  name:'🐉 Питомцы',   icons:['🐉','🦄','🐺','🦅','🦁','🐯','🐻','🦊','🐱','🐶','🦖','🐲','🦉','🐴','🦌'], names:['Дракон','Единорог','Волк','Орёл','Лев','Тигр','Медведь','Лиса','Кот','Пёс','Динозавр','Змей','Сова','Конь','Олень'] },
+    { cat:'nature',   name:'🌳 Природа',   icons:['🌳','🌲','🌴','🌵','🌷','🌸','🌺','🍀','🍄','🌿','🌹','🌻','🌼','🍁','🌱'], names:['Дуб','Ель','Пальма','Кактус','Тюльпан','Сакура','Гибискус','Клевер','Гриб','Папоротник','Роза','Подсолнух','Ромашка','Клён','Росток'] },
+    { cat:'tech',     name:'🤖 Технологии',icons:['🚀','🛸','🤖','💻','📱','🎮','🔋','💾','📡','🛰️','⚙️','🔌','💡','📺','📻'], names:['Ракета','НЛО','Робот','Ноутбук','Смартфон','Джойстик','Батарея','Диск','Антенна','Спутник','Шестерня','Розетка','Лампа','Телевизор','Радио'] },
+    { cat:'relics',   name:'🗿 Реликвии',  icons:['🗿','🏺','⚱️','🔱','⚜️','☯️','🕉️','✡️','☪️','🔯','⚛️','🆔','♾️','☀️','🌙'], names:['Истукан','Ваза','Урна','Скипетр','Лилия','ИньЯн','Ом','Звезда','Полумесяц','Гексаграмма','Атом','Знак','Бесконечность','Солнце','Луна'] },
+    { cat:'transport',name:'🚗 Транспорт', icons:['🚗','🏎️','🚁','✈️','🛩️','🚂','🚢','⛵','🏍️','🛵','🚓','🚒','🚑','🚕','🚙'], names:['Машина','Гонка','Вертолёт','Самолёт','Джет','Поезд','Корабль','Яхта','Мотоцикл','Скутер','Полиция','Пожарная','Скорая','Такси','Джип'] },
+    { cat:'music',    name:'🎵 Музыка',    icons:['🎵','🎶','🎷','🎸','🎹','🎺','🎻','🥁','🪗','🪕','🎤','🎧','📯','🔔','🎼'], names:['Нота','Мелодия','Саксофон','Гитара','Пианино','Труба','Скрипка','Барабан','Аккордеон','Банджо','Микрофон','Наушники','Рог','Колокол','Партитура'] },
+    { cat:'sport',    name:'⚽ Спорт',     icons:['⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🏓','🏸','⛳','🏒','🎣','🎳','🥊'], names:['Футбол','Баскетбол','Регби','Бейсбол','Теннис','Волейбол','Мяч','Бильярд','ПингПонг','Бадминтон','Гольф','Хоккей','Рыбалка','Боулинг','Бокс'] }
+];
+
+
+var adjectives = ['Древний','Волшебный','Проклятый','Святой','Тёмный','Светлый','Золотой','Серебряный','Кристальный','Огненный','Ледяной','Грозовой','Теневой','Небесный','Адский','Призрачный','Рунный','Мистический','Великий','Королевский','Императорский','Божественный','Демонический','Эльфийский','Гномий','Драконий','Феникса','Титана','Бога','Хаоса','Порядка','Жизни','Смерти','Времени','Космический','Звёздный','Лунный','Солнечный','Ветра','Земли','Воды','Молнии','Ядовитый','Кровавый','Алмазный','Рубиновый','Сапфировый','Изумрудный','Платиновый','Железный','Стальной','Медный','Бронзовый','Забытый','Запретный','Легендарный'];
+
+// ============ ГЕНЕРАЦИЯ ПРЕДМЕТОВ ============
+var items = [];
+var itemId = 0;
+var rarityKeys = Object.keys(rarities);
+
+for (var ci = 0; ci < itemCategories.length; ci++) {
+    var cat = itemCategories[ci];
+    for (var ii = 0; ii < cat.icons.length; ii++) {
+        for (var ai = 0; ai < adjectives.length; ai++) {
+            var roll = Math.random() * 100;
+            var rarity = 'common';
+            var acc = 0;
+            for (var rk = 0; rk < rarityKeys.length; rk++) {
+                acc += rarities[rarityKeys[rk]].chance;
+                if (roll <= acc) { rarity = rarityKeys[rk]; break; }
+            }
+            var baseValue = 10 + Math.floor(Math.random() * 150);
+            var value = Math.floor(baseValue * rarities[rarity].mult * (1 + Math.random() * 2));
+            items.push({
+                id: itemId++,
+                name: adjectives[ai] + ' ' + cat.names[ii],
+                icon: cat.icons[ii],
+                category: cat.cat,
+                categoryName: cat.name,
+                rarity: rarity,
+                value: Math.max(5, value)
+            });
+        }
+    }
+}
+
+// ============ СУНДУКИ ============
+var chests = [
+    { id:1, name:'Деревянный',   icon:'📦', price:50,         tier:1, minRarity:['common','uncommon'] },
+    { id:2, name:'Железный',     icon:'🗃️', price:200,        tier:1, minRarity:['common','uncommon','rare'] },
+    { id:3, name:'Бронзовый',    icon:'🎁', price:500,        tier:2, minRarity:['common','uncommon','rare'] },
+    { id:4, name:'Серебряный',   icon:'💼', price:1500,       tier:2, minRarity:['uncommon','rare','epic'] },
+    { id:5, name:'Золотой',      icon:'🏆', price:5000,       tier:3, minRarity:['uncommon','rare','epic'] },
+    { id:6, name:'Платиновый',   icon:'🎰', price:15000,      tier:3, minRarity:['rare','epic','legendary'] },
+    { id:7, name:'Изумрудный',   icon:'💚', price:35000,      tier:3, minRarity:['rare','epic','legendary'] },
+    { id:8, name:'Рубиновый',    icon:'❤️', price:75000,      tier:4, minRarity:['rare','epic','legendary'] },
+    { id:9, name:'Сапфировый',   icon:'💙', price:150000,     tier:4, minRarity:['epic','legendary'] },
+    { id:10,name:'Алмазный',     icon:'💎', price:300000,     tier:4, minRarity:['epic','legendary','mythic'] },
+    { id:11,name:'Кристальный',  icon:'🔮', price:600000,     tier:4, minRarity:['epic','legendary','mythic'] },
+    { id:12,name:'Магический',   icon:'✨', price:1200000,    tier:5, minRarity:['legendary','mythic'] },
+    { id:13,name:'Древний',      icon:'🗿', price:2500000,    tier:5, minRarity:['legendary','mythic'] },
+    { id:14,name:'Драконий',     icon:'🐉', price:5000000,    tier:5, minRarity:['legendary','mythic'] },
+    { id:15,name:'Феникса',      icon:'🔥', price:10000000,   tier:5, minRarity:['legendary','mythic'] },
+    { id:16,name:'Небесный',     icon:'☁️', price:25000000,   tier:5, minRarity:['legendary','mythic'] },
+    { id:17,name:'Звёздный',     icon:'🌟', price:60000000,   tier:5, minRarity:['mythic'] },
+    { id:18,name:'Галактический',icon:'🌌', price:150000000,  tier:5, minRarity:['mythic'] },
+    { id:19,name:'Божественный', icon:'👑', price:500000000,  tier:5, minRarity:['mythic'] },
+    { id:20,name:'Вселенной',    icon:'🌠', price:1000000000, tier:5, minRarity:['mythic'] }
+];
+
+// ============ СОСТОЯНИЕ ============
+var state = {
+    money: 0,
+    clickLvl: 1,
+    autoLvl: 0,
+    multLvl: 1,
+    perClick: 1,
+    perSec: 0,
+    multiplier: 1,
+    inventory: {},
+    totalEarned: 0,
+    totalClicks: 0,
+    chestsOpened: 0,
+    itemsGotten: 0,
+    legCount: 0,
+    mythCount: 0,
+    musicOn: true,
+    lastAd: 0
+};
+
+var lastRevealedItem = null;
+var invFilter = 'all';
+
+// ============ СОХРАНЕНИЕ ============
+function save() {
+    try {
+        var data = JSON.stringify(state);
+        localStorage.setItem('chestGame', data);
+        if (vkReady && typeof vkBridge !== 'undefined') {
+            vkBridge.send('VKWebAppStorageSet', { key: 'gameState', value: data }).catch(function(){});
+        }
+    } catch(e) {}
+}
+
+function load() {
+    try {
+        var saved = localStorage.getItem('chestGame');
+        if (saved) {
+            var parsed = JSON.parse(saved);
+            for (var k in parsed) state[k] = parsed[k];
+        }
+    } catch(e) {}
+}
+
+// ============ УТИЛИТЫ ============
+function format(n) {
+    n = Math.floor(n);
+    if (n < 1000) return n;
+    if (n < 1e6) return (n/1000).toFixed(1)+'K';
+    if (n < 1e9) return (n/1e6).toFixed(1)+'M';
+    if (n < 1e12) return (n/1e9).toFixed(1)+'B';
+    return (n/1e12).toFixed(1)+'T';
+}
+
+function toast(text) {
+    var t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = text;
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 2500);
+}
+
+function clickCost() { return Math.floor(10 * Math.pow(1.15, state.clickLvl - 1)); }
+function autoCost()  { return Math.floor(50 * Math.pow(1.2, state.autoLvl)); }
+function multCost()  { return Math.floor(1000 * Math.pow(5, state.multLvl - 1)); }
+
+function updateUI() {
+    document.getElementById('money').textContent = format(state.money);
+    document.getElementById('perClick').textContent = state.perClick * state.multiplier;
+    document.getElementById('perSec').textContent = state.perSec * state.multiplier;
+    document.getElementById('clickLvl').textContent = state.clickLvl;
+    document.getElementById('autoLvl').textContent = state.autoLvl;
+    document.getElementById('multLvl').textContent = state.multLvl;
+    document.getElementById('clickCost').textContent = format(clickCost());
+    document.getElementById('autoCost').textContent = format(autoCost());
+    document.getElementById('multCost').textContent = format(multCost());
+    document.getElementById('totalItems').textContent = items.length;
+    document.getElementById('invCount').textContent = Object.keys(state.inventory).length;
+    document.getElementById('totalEarned').textContent = format(state.totalEarned);
+    document.getElementById('totalClicks').textContent = state.totalClicks;
+    document.getElementById('chestsOpened').textContent = state.chestsOpened;
+    document.getElementById('itemsGotten').textContent = state.itemsGotten;
+    document.getElementById('legCount').textContent = state.legCount;
+    document.getElementById('mythCount').textContent = state.mythCount;
+}
+
+// ============ ТАПАЛКА ============
+function tapCoin(e) {
+    initAudio();
+    var earned = state.perClick * state.multiplier;
+    state.money += earned;
+    state.totalEarned += earned;
+    state.totalClicks++;
+    playSound('click');
+    
+    var coin = document.getElementById('coin');
+    var rect = coin.getBoundingClientRect();
+    var parentRect = coin.parentElement.getBoundingClientRect();
+    var x = (e && e.clientX ? e.clientX : rect.left + rect.width/2) - parentRect.left;
+    var y = (e && e.clientY ? e.clientY : rect.top + rect.height/2) - parentRect.top;
+    
+    var f = document.createElement('div');
+    f.className = 'floating-coin';
+    f.textContent = '+' + format(earned);
+    f.style.left = x + 'px';
+    f.style.top = y + 'px';
+    coin.parentElement.appendChild(f);
+    setTimeout(function(){ f.remove(); }, 1000);
+    
+    updateUI();
+}
+
+function upgradeClick() {
+    var c = clickCost();
+    if (state.money >= c) {
+        state.money -= c;
+        state.clickLvl++;
+        state.perClick = state.clickLvl;
+        playSound('buy');
+        updateUI(); save();
+    } else toast('Недостаточно монет!');
+}
+
+function upgradeAuto() {
+    var c = autoCost();
+    if (state.money >= c) {
+        state.money -= c;
+        state.autoLvl++;
+        state.perSec = state.autoLvl;
+        playSound('buy');
+        updateUI(); save();
+    } else toast('Недостаточно монет!');
+}
+
+function upgradeMult() {
+    var c = multCost();
+    if (state.money >= c) {
+        state.money -= c;
+        state.multLvl++;
+        state.multiplier = Math.pow(2, state.multLvl - 1);
+        playSound('buy');
+        updateUI(); save();
+    } else toast('Недостаточно монет!');
+}
+
+// ============ СУНДУКИ ============
+function renderChests() {
+    var grid = document.getElementById('chestsGrid');
+    grid.innerHTML = '';
+    chests.forEach(function(chest) {
+        var div = document.createElement('div');
+        div.className = 'chest chest-tier-' + chest.tier;
+        div.innerHTML = '<div class="chest-icon">' + chest.icon + '</div>' +
+                        '<div class="chest-name">' + chest.name + '</div>' +
+                        '<div class="chest-price">💰 ' + format(chest.price) + '</div>' +
+                        '<div style="font-size:10px; color:#aaa; margin-top:4px;">Тир ' + chest.tier + '</div>';
+        div.addEventListener('click', function(){ openChest(chest); });
+        grid.appendChild(div);
+    });
+}
+
+function openChest(chest) {
+    if (state.money < chest.price) {
+        toast('Нужно ' + format(chest.price) + ' 💰');
+        return;
+    }
+    state.money -= chest.price;
+    state.chestsOpened++;
+    
+    var allowed = chest.minRarity;
+    var totalChance = 0;
+    for (var i = 0; i < allowed.length; i++) totalChance += rarities[allowed[i]].chance;
+    var roll = Math.random() * totalChance;
+    var selectedRarity = allowed[0];
+    for (var j = 0; j < allowed.length; j++) {
+        roll -= rarities[allowed[j]].chance;
+        if (roll <= 0) { selectedRarity = allowed[j]; break; }
+    }
+    
+    var pool = items.filter(function(it){ return it.rarity === selectedRarity; });
+    var item = pool[Math.floor(Math.random() * pool.length)];
+    var finalValue = Math.floor(item.value * (1 + chest.tier * 0.5));
+    var received = { id:item.id, name:item.name, icon:item.icon, category:item.category, rarity:item.rarity, value:finalValue };
+    
+    if (state.inventory[item.id]) state.inventory[item.id].count++;
+    else {
+        state.inventory[item.id] = { id:item.id, name:item.name, icon:item.icon, category:item.category, rarity:item.rarity, value:finalValue, count:1 };
+    }
+    
+    state.itemsGotten++;
+    if (selectedRarity === 'legendary') { state.legCount++; playSound('rare'); }
+    else if (selectedRarity === 'mythic') { state.mythCount++; playSound('rare'); }
+    else playSound('chest');
+    
+    lastRevealedItem = received;
+    showReveal(received);
+    updateUI();
+    save();
+}
+
+function showReveal(item) {
+    document.getElementById('revealIcon').textContent = item.icon;
+    document.getElementById('revealName').textContent = item.name;
+    var rar = rarities[item.rarity];
+    var rarEl = document.getElementById('revealRarity');
+    rarEl.textContent = '⭐ ' + rar.name;
+    rarEl.style.color = rar.color;
+    rarEl.style.textShadow = '0 0 10px ' + rar.color;
+    document.getElementById('revealValue').innerHTML = '💰 ' + format(item.value);
+    document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.remove('active');
+}
+
+// ============ ИНВЕНТАРЬ ============
+function renderInvFilters() {
+    var cont = document.getElementById('invFilters');
+    cont.innerHTML = '';
+    
+    var all = document.createElement('button');
+    all.className = 'filter-btn' + (invFilter === 'all' ? ' active' : '');
+    all.textContent = 'Все';
+    all.addEventListener('click', function(){ invFilter = 'all'; renderInvFilters(); renderInventory(); });
+    cont.appendChild(all);
+    
+    itemCategories.forEach(function(c){
+        var btn = document.createElement('button');
+        btn.className = 'filter-btn' + (invFilter === c.cat ? ' active' : '');
+        btn.textContent = c.name;
+        btn.addEventListener('click', function(){ invFilter = c.cat; renderInvFilters(); renderInventory(); });
+        cont.appendChild(btn);
+    });
+    
+    Object.keys(rarities).forEach(function(r){
+        var btn = document.createElement('button');
+        btn.className = 'filter-btn' + (invFilter === 'r_' + r ? ' active' : '');
+        btn.textContent = '⭐ ' + rarities[r].name;
+        btn.style.color = rarities[r].color;
+        btn.addEventListener('click', function(){ invFilter = 'r_' + r; renderInvFilters(); renderInventory(); });
+        cont.appendChild(btn);
+    });
+}
+
+function renderInventory() {
+    var grid = document.getElementById('inventoryGrid');
+    grid.innerHTML = '';
+    var list = [];
+    for (var k in state.inventory) list.push(state.inventory[k]);
+    
+    if (invFilter.indexOf('r_') === 0) {
+        var r = invFilter.slice(2);
+        list = list.filter(function(it){ return it.rarity === r; });
+    } else if (invFilter !== 'all') {
+        list = list.filter(function(it){ return it.category === invFilter; });
+    }
+    
+    var rarityOrder = ['mythic','legendary','epic','rare','uncommon','common'];
+    list.sort(function(a,b){
+        var rr = rarityOrder.indexOf(a.rarity) - rarityOrder.indexOf(b.rarity);
+        return rr !== 0 ? rr : b.value - a.value;
+    });
+    
+    if (list.length === 0) {
+        grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#aaa; padding:30px;">Пусто 😢 Открой сундуки!</p>';
+        return;
+    }
+    
+    list.forEach(function(item) {
+        var div = document.createElement('div');
+        div.className = 'inv-item';
+        div.style.borderColor = rarities[item.rarity].color;
+        div.innerHTML = '<div class="icon">' + item.icon + '</div>' +
+                        '<div style="color:' + rarities[item.rarity].color + '; font-weight:bold; margin:4px 0; font-size:10px;">' + item.name + '</div>' +
+                        '<div style="color:#ffd700;">💰' + format(item.value) + '</div>' +
+                        '<div class="count">x' + item.count + '</div>';
+        var btn = document.createElement('button');
+        btn.className = 'sell-btn';
+        btn.textContent = 'Продать';
+        btn.addEventListener('click', (function(id){
+            return function(){ sellItem(id); };
+        })(item.id));
+        div.appendChild(btn);
+        grid.appendChild(div);
+    });
+}
+
+function sellItem(id) {
+    var item = state.inventory[id];
+    if (!item) return;
+    state.money += item.value;
+    state.totalEarned += item.value;
+    item.count--;
+    if (item.count <= 0) delete state.inventory[id];
+    playSound('buy');
+    updateUI();
+    renderInventory();
+    save();
+}
+
+// ============ РЕКЛАМА И ВК ============
+function watchAd() {
+    var now = Date.now();
+    if (now - state.lastAd < 30000) {
+        toast('⏳ Подожди ' + Math.ceil((30000 - (now - state.lastAd))/1000) + ' сек');
+        return;
+    }
+    
+    var giveReward = function() {
+        var r = 1000 * state.multiplier;
+        state.money += r;
+        state.totalEarned += r;
+        state.lastAd = Date.now();
+        playSound('rare');
+        toast('🎉 +' + format(r) + ' 💰');
+        updateUI(); save();
+    };
+    
+    if (vkReady && typeof vkBridge !== 'undefined') {
+        vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' })
+            .then(function(data){ if (data.result) giveReward(); else giveReward(); })
+            .catch(function(){ giveReward(); });
+    } else {
+        giveReward();
+    }
+}
+
+function shareItem() {
+    if (!lastRevealedItem) return;
+    var text = '🎉 Я выбил ' + lastRevealedItem.icon + ' "' + lastRevealedItem.name + '" (' + rarities[lastRevealedItem.rarity].name + ') в "Охотник за сундуками"!';
+    if (vkReady && typeof vkBridge !== 'undefined') {
+        vkBridge.send('VKWebAppShowWallPostBox', { message: text }).catch(function(){ toast('Не получилось'); });
+    } else {
+        toast('Шаринг работает только в ВК');
+    }
+}
+
+function shareStats() {
+    var text = '🏴‍☠️ Моя стата в "Охотник за сундуками":\n💰 Заработано: ' + format(state.totalEarned) + '\n📦 Сундуков: ' + state.chestsOpened + '\n🌟 Легендарных: ' + state.legCount + '\n👑 Мифических: ' + state.mythCount;
+    if (vkReady && typeof vkBridge !== 'undefined') {
+        vkBridge.send('VKWebAppShowWallPostBox', { message: text }).catch(function(){ toast('Не получилось'); });
+    } else {
+        toast('Шаринг работает только в ВК');
+    }
+}
+
+function inviteFriends() {
+    if (vkReady && typeof vkBridge !== 'undefined') {
+        vkBridge.send('VKWebAppShowInviteBox')
+            .then(function(data){
+                if (data.success) {
+                    state.money += 5000;
+                    state.totalEarned += 5000;
+                    toast('✅ +5000 💰');
+                    updateUI(); save();
+                }
+            })
+            .catch(function(){ toast('Не получилось'); });
+    } else {
+        toast('Работает только в ВК');
+    }
+}
+
+// ============ ВКЛАДКИ ============
+function setupTabs() {
+    var tabs = document.querySelectorAll('.tab');
+    for (var i = 0; i < tabs.length; i++) {
+        (function(tab){
+            tab.addEventListener('click', function(){
+                var name = tab.getAttribute('data-section');
+                var sections = document.querySelectorAll('.section');
+                for (var j = 0; j < sections.length; j++) sections[j].classList.remove('active');
+                var allTabs = document.querySelectorAll('.tab');
+                for (var k = 0; k < allTabs.length; k++) allTabs[k].classList.remove('active');
+                document.getElementById(name).classList.add('active');
+                tab.classList.add('active');
+                if (name === 'inventory') { renderInvFilters(); renderInventory(); }
+                if (name === 'chests') renderChests();
+            });
+        })(tabs[i]);
+    }
+}
+
+// ============ ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ ============
+function init() {
+    load();
+    state.perClick = state.clickLvl;
+    state.perSec = state.autoLvl;
+    state.multiplier = Math.pow(2, state.multLvl - 1);
+    musicOn = state.musicOn !== false;
+    document.getElementById('musicBtn').textContent = musicOn ? '🔊' : '🔇';
+    
+    // Подключаем все кнопки
+    document.getElementById('musicBtn').addEventListener('click', toggleMusic);
+    document.getElementById('btnClick').addEventListener('click', upgradeClick);
+    document.getElementById('btnAuto').addEventListener('click', upgradeAuto);
+    document.getElementById('btnMult').addEventListener('click', upgradeMult);
+    document.getElementById('adBtn').addEventListener('click', watchAd);
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('shareItemBtn').addEventListener('click', shareItem);
+    document.getElementById('shareStatsBtn').addEventListener('click', shareStats);
+    document.getElementById('inviteBtn').addEventListener('click', inviteFriends);
+    
+    // Клик по монете
+    var coin = document.getElementById('coin');
+    coin.addEventListener('click', tapCoin);
+    
+    setupTabs();
+    renderChests();
+    updateUI();
+    
+    // Запуск музыки при первом касании
+    var startAudio = function() {
+        initAudio();
+        if (musicOn) {
+            clearTimeout(musicTimeout);
+            playMelody();
+        }
+        document.removeEventListener('click', startAudio);
+        document.removeEventListener('touchstart', startAudio);
+    };
+    document.addEventListener('click', startAudio);
+    document.addEventListener('touchstart', startAudio);
+    
+    console.log('✅ Игра загружена! Предметов:', items.length);
+}
+
+// ============ АВТОСЕЙВ И АВТОДОХОД ============
+setInterval(function() {
+    if (state.perSec > 0) {
+        var earned = state.perSec * state.multiplier;
+        state.money += earned;
+        state.totalEarned += earned;
+        updateUI();
+    }
+}, 1000);
+
+setInterval(save, 8000);
+
+window.addEventListener('beforeunload', save);
+
+// ============ СТАРТ ============
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+
+</script>
+</body>
+</html>
